@@ -26,9 +26,10 @@ SPDX-License-Identifier: MIT
 #include <map>
 #include <set>
 #include <vector>
+#include <atomic>
 #include <tbb/tbb.h>
 
-const int P = tbb::task_scheduler_init::default_num_threads();
+const int P = tbb::info::default_concurrency();
 thread_local int my_tid = -1;
 void doWork(const std::string& name, double seconds);
 
@@ -43,11 +44,11 @@ void fig_12_9() {
 }
 
 std::vector<std::set<std::string>> tid_regions(3*P);
-tbb::atomic<int> next_tid;
+std::atomic<int> next_tid;
 
 void noteParticipation(const std::string& name) {
   if (my_tid == -1) {
-    my_tid = next_tid.fetch_and_increment();
+    my_tid = next_tid.fetch_add(1);
   }
   tid_regions[my_tid].insert(name);
 }
@@ -66,7 +67,7 @@ void dumpParticipation() {
       m[n] += 1;
     }
   }
-  std::cout << "There are " << tbb::task_scheduler_init::default_num_threads() << " logical cores." << std::endl;
+  std::cout << "There are " << tbb::info::default_concurrency() << " logical cores." << std::endl;
   for (auto& kv : m) {
     std::cout << kv.second << " threads participated in " << kv.first << std::endl;
   }
